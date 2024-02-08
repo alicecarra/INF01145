@@ -1,10 +1,17 @@
-use postgres::Client;
+use std::collections::HashMap;
 
-pub fn create_instances(client: &mut Client) {
+use anyhow::anyhow;
+use postgres::Client;
+use repl_rs::Value;
+
+pub fn create_instances(
+    args: HashMap<String, Value>,
+    client: &mut Client,
+) -> Result<Option<String>, anyhow::Error> {
     let query = include_str!("instances.sql");
 
     match client.batch_execute(query) {
-        Ok(_) => println!("Instâncias Criadas"),
-        Err(error) => eprintln!("Erro criando instâncias: {error}"),
-    };
+        Ok(_) => Ok(Some("Instâncias Criadas".into())),
+        Err(error) => Err(anyhow!("Error creating: {error}")),
+    }
 }
