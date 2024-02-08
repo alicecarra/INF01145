@@ -30,9 +30,9 @@ CREATE TABLE Produto (
     descricao TEXT NOT NULL,
     marca TEXT NOT NULL,
     imagem VARCHAR(255) NOT NULL,
-    peso DECIMAL(10, 2),
-    preco DECIMAL(10, 2) NOT NULL,
-    estoque INT NOT NULL
+    peso FLOAT,
+    preco FLOAT NOT NULL,
+    estoque FLOAT NOT NULL
 );
 
 -- Tabela Categoria
@@ -55,7 +55,7 @@ CREATE TABLE Promocao (
     nome VARCHAR(255) NOT NULL,
     dataInicio DATE NOT NULL,
     dataFim DATE NOT NULL,
-    desconto DECIMAL(5, 2) NOT NULL,
+    desconto FLOAT NOT NULL,
     codigoCategoria VARCHAR(255) NOT NULL REFERENCES Categoria(codigo)
 );
 
@@ -119,7 +119,7 @@ CREATE TABLE Pedido (
      CodigoCarrinho SERIAL REFERENCES Carrinho(CodigoCarrinho),
     DataPedido DATE NOT NULL,
     CodigoPagamento SERIAL REFERENCES MetodoPagamento(CodigoPagamento),
-    TotalPedido DECIMAL(10, 2) NOT NULL
+    TotalPedido FLOAT NOT NULL
 );
 
 -- Tabela Transportadora
@@ -154,7 +154,7 @@ CREATE TABLE EnvioPedido (
     CodigoPedido VARCHAR(255) REFERENCES Pedido(CodigoPedido),
     CodigoTransportadora SERIAL REFERENCES Transportadora(CodigoTransportadora),
     Data DATE NOT NULL,
-    ValorFrete DECIMAL(10, 2) NOT NULL,
+    ValorFrete FLOAT NOT NULL,
     PRIMARY KEY (CodigoPedido, CodigoTransportadora)
 );
 
@@ -288,3 +288,25 @@ VALUES
   ('pedido1', 1, '2024-02-12', 50.00),
   ('pedido2', 1, '2024-02-15', 30.00);
 
+-- Criar a visão que relaciona Pedido, Cliente e Produto com possível desconto de Promoção.
+CREATE VIEW VisaoDetalhesPedido AS
+select 
+    ped.CodigoPedido,
+    ped.DataPedido,
+    cli.email AS EmailCliente,
+    prod.nome AS NomeProduto,
+    cat.nome as Categoria,
+    c.Quantidade,
+    c.Quantidade * prod.preco AS Subtotal,
+    COALESCE(prom.desconto, 0) AS PorcentagemDesconto -- 
+FROM Pedido ped
+JOIN Carrinho ccp ON ped.CodigoCarrinho = ccp.CodigoCarrinho
+join compoecarrinho c on ccp.codigocarrinho = c.codigocarrinho 
+JOIN Cliente cli ON c .CodigoCliente = cli.email
+JOIN Produto prod ON c.CodigoProduto = prod.codigo
+JOIN Categoriza categoriza ON prod.codigo = categoriza.CodigoProduto
+JOIN Categoria cat ON cat.codigo = categoriza.CodigoCategoria
+LEFT JOIN Promocao prom ON cat.codigo = prom.codigocategoria
+                     AND ped.DataPedido BETWEEN prom.dataInicio AND prom.dataFim;
+                     
+            

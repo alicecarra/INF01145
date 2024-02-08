@@ -1,24 +1,24 @@
 pub mod instances;
+pub mod querys;
 
+use anyhow::anyhow;
+use inf01145::Service;
+use querys::{list, query};
 use repl_rs::{Command, Error, Parameter, Result, Value};
 use repl_rs::{Convert, Repl};
 
 use instances::create_instances;
-use postgres::Client;
 
 fn main() -> anyhow::Result<()> {
-    let mut client = match Client::connect(
-        "host=localhost user=postgres password=1234",
-        postgres::NoTls,
-    ) {
-        Ok(client) => client,
-        Err(error) => panic!("Error creating database connection: {error}"),
-    };
+    let mut repl = Repl::new(Service::default())
+        .add_command(Command::new("create", create_instances).with_help("create instances"))
+        .add_command(Command::new("list", list).with_help("create instances"))
+        .add_command(
+            Command::new("query", query)
+                .with_parameter(Parameter::new("query").set_required(true)?)?
+                .with_parameter(Parameter::new("arg").set_required(false)?)?
+                .with_help("create instances"),
+        );
 
-    let mut repl = Repl::new(client)
-        .add_command(Command::new("create", create_instances).with_help("create instances"));
-
-    repl.run();
-
-    Ok(())
+    repl.run().map_err(|error| anyhow!("repl error: {error}"))
 }
