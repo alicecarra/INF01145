@@ -5,7 +5,7 @@ use inf01145::Service;
 use repl_rs::Value;
 
 pub fn create_instances(
-    args: HashMap<String, Value>,
+    _args: HashMap<String, Value>,
     service: &mut Service,
 ) -> Result<Option<String>, anyhow::Error> {
     let query = include_str!("instances.sql");

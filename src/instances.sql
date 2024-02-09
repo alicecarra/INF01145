@@ -116,7 +116,7 @@ CREATE TABLE CompoeCarrinho (
 -- Tabela Pedido
 CREATE TABLE Pedido (
     CodigoPedido VARCHAR(255) PRIMARY KEY,
-     CodigoCarrinho SERIAL REFERENCES Carrinho(CodigoCarrinho),
+    CodigoCarrinho SERIAL REFERENCES Carrinho(CodigoCarrinho),
     DataPedido DATE NOT NULL,
     CodigoPagamento SERIAL REFERENCES MetodoPagamento(CodigoPagamento),
     TotalPedido FLOAT NOT NULL
@@ -157,6 +157,61 @@ CREATE TABLE EnvioPedido (
     ValorFrete FLOAT NOT NULL,
     PRIMARY KEY (CodigoPedido, CodigoTransportadora)
 );
+
+
+-- Criar a visão que relaciona Pedido, Cliente e Produto com possível desconto de Promoção.
+CREATE VIEW VisaoDetalhesPedido AS
+select 
+    ped.CodigoPedido,
+    ped.DataPedido,
+    cli.email AS EmailCliente,
+    prod.nome AS NomeProduto,
+    cat.nome as Categoria,
+    c.Quantidade,
+    c.Quantidade * prod.preco AS Subtotal,
+    COALESCE(prom.desconto, 0) AS PorcentagemDesconto -- 
+FROM Pedido ped
+JOIN Carrinho ccp ON ped.CodigoCarrinho = ccp.CodigoCarrinho
+join compoecarrinho c on ccp.codigocarrinho = c.codigocarrinho 
+JOIN Cliente cli ON c .CodigoCliente = cli.email
+JOIN Produto prod ON c.CodigoProduto = prod.codigo
+JOIN Categoriza categoriza ON prod.codigo = categoriza.CodigoProduto
+JOIN Categoria cat ON cat.codigo = categoriza.CodigoCategoria
+LEFT JOIN Promocao prom ON cat.codigo = prom.codigocategoria
+                     AND ped.DataPedido BETWEEN prom.dataInicio AND prom.dataFim;
+                     
+            
+-- GATILHO/FUNC. ARMAZ.
+
+-- Função armazenada para verificar o estoque disponível de um produto
+CREATE OR REPLACE FUNCTION verificaEstoqueDisponivel(codigo_produto INT, quantidade INT) RETURNS BOOLEAN AS $$
+DECLARE
+    estoque_disponivel FLOAT;
+BEGIN
+    -- Obtém o estoque disponível para o produto especificado
+    SELECT estoque INTO estoque_disponivel FROM Produto WHERE codigo = codigo_produto;
+    -- Verifica se há estoque suficiente para a quantidade desejada
+    IF estoque_disponivel >= quantidade THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Gatilho para verificar estoque antes da inserção no carrinho
+CREATE OR REPLACE FUNCTION verificaEstoqueTrigger() RETURNS TRIGGER AS $$
+BEGIN
+    IF NOT verificaEstoqueDisponivel(NEW.CodigoProduto, NEW.Quantidade) THEN
+            -- Se não houver estoque suficiente, lança uma exceção
+        RAISE EXCEPTION 'Estoque insuficiente para adicionar o produto ao carrinho';
+    END IF;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER verificaEstoqueBeforeInsert BEFORE INSERT ON CompoeCarrinho
+FOR EACH ROW EXECUTE FUNCTION verificaEstoqueTrigger();
 
 
 -- INSERÇÕES
@@ -287,26 +342,3 @@ INSERT INTO EnvioPedido (CodigoPedido, CodigoTransportadora, Data, ValorFrete)
 VALUES
   ('pedido1', 1, '2024-02-12', 50.00),
   ('pedido2', 1, '2024-02-15', 30.00);
-
--- Criar a visão que relaciona Pedido, Cliente e Produto com possível desconto de Promoção.
-CREATE VIEW VisaoDetalhesPedido AS
-select 
-    ped.CodigoPedido,
-    ped.DataPedido,
-    cli.email AS EmailCliente,
-    prod.nome AS NomeProduto,
-    cat.nome as Categoria,
-    c.Quantidade,
-    c.Quantidade * prod.preco AS Subtotal,
-    COALESCE(prom.desconto, 0) AS PorcentagemDesconto -- 
-FROM Pedido ped
-JOIN Carrinho ccp ON ped.CodigoCarrinho = ccp.CodigoCarrinho
-join compoecarrinho c on ccp.codigocarrinho = c.codigocarrinho 
-JOIN Cliente cli ON c .CodigoCliente = cli.email
-JOIN Produto prod ON c.CodigoProduto = prod.codigo
-JOIN Categoriza categoriza ON prod.codigo = categoriza.CodigoProduto
-JOIN Categoria cat ON cat.codigo = categoriza.CodigoCategoria
-LEFT JOIN Promocao prom ON cat.codigo = prom.codigocategoria
-                     AND ped.DataPedido BETWEEN prom.dataInicio AND prom.dataFim;
-                     
-            
