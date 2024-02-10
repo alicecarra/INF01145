@@ -22,6 +22,7 @@ pub fn query(
             }
         };
 
+        // QUERY WITH PARAMETERS
         match service.client.query(query, &[&arg]) {
             Ok(result) => {
                 let mut response = String::new();
@@ -47,6 +48,7 @@ pub fn query(
             Err(error) => Err(anyhow!("Error creating instances: {error}")),
         }
     } else {
+        // QUERY WITHOUT PARAMETERS
         match service.client.simple_query(query) {
             Ok(result) => {
                 let mut response = String::new();

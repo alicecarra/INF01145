@@ -199,7 +199,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Gatilho para verificar estoque antes da inserção no carrinho
+-- Função verificar estoque antes da inserção no carrinho
 CREATE OR REPLACE FUNCTION verificaEstoqueTrigger() RETURNS TRIGGER AS $$
 BEGIN
     IF NOT verificaEstoqueDisponivel(NEW.CodigoProduto, NEW.Quantidade) THEN
