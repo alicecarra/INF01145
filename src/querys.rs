@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use anyhow::anyhow;
+use chrono::NaiveDate;
 use inf01145::Service;
 use postgres::Row;
 use repl_rs::{Convert, Value};
@@ -45,7 +46,7 @@ pub fn query(
 
                 Ok(Some(response))
             }
-            Err(error) => Err(anyhow!("Error creating instances: {error}")),
+            Err(error) => Err(anyhow!("Erro: {error}")),
         }
     } else {
         // QUERY WITHOUT PARAMETERS
@@ -72,7 +73,7 @@ pub fn query(
 
                 Ok(Some(response))
             }
-            Err(error) => return Err(anyhow!("Error creating instances: {error}")),
+            Err(error) => return Err(anyhow!("Erro: {error}")),
         }
     }
 }
@@ -130,6 +131,10 @@ fn format_row(row: &Row, idx: usize) -> Option<String> {
     if let Ok(text) = row.try_get(idx) {
         let text: &str = text;
         return Some(text.to_string());
+    }
+    if let Ok(date) = row.try_get(idx) {
+        let date: NaiveDate = date;
+        return Some(date.to_string());
     }
 
     return None;

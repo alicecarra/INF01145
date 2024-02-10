@@ -8,5 +8,6 @@ authors = ["Alice Carra", "Eric PEracchi Pisoni"]
 
 [dependencies]
 anyhow = "1.0.79"
-postgres = "0.19.7"
+chrono = "0.4.33"
+postgres = { version = "0.19.7", features = ["with-chrono-0_4"] }
 repl-rs = "0.2.8"
