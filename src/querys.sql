@@ -95,7 +95,7 @@ JOIN Categoriza c ON p.codigo = c.CodigoProduto
 JOIN Promocao prom ON c.CodigoCategoria = prom.CodigoCategoria
 WHERE prom.dataInicio <= CURRENT_DATE AND prom.dataFim >= CURRENT_DATE;
 
--- | GATILHO - Tenta inserir no carrinho uma quantidade de itens maior do que o estoque |
+-- | GATILHO - Tenta inserir no carrinho uma quantidade X do produto 8 (SSD NVME 1TB) |
 INSERT INTO CompoeCarrinho (CodigoCarrinho, CodigoCliente, CodigoProduto, Quantidade)
 values
-  (1, 'joaosilva@email.com', 8, 6);
+  (1, 'joaosilva@email.com', 8, $1);
